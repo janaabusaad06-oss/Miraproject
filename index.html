@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>She Runs — Careem MVP</title>
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  
+  :root {
+    --careem-green: #00563F;
+    --careem-green-dark: #003D2E;
+    --careem-green-light: #E8F3EF;
+    --sherun-pink: #E91E80;
+    --sherun-pink-light: #FCE4F0;
+    --sherun-pink-soft: #FFF0F7;
+    --beige: #FDF8F3;
+    --text-dark: #1a1a1a;
+    --text-mid: #6b6b6b;
+    --text-light: #9b9b9b;
+    --border: #EFEFEF;
+    --bg: #F5F5F5;
+  }
+
+  html, body {
+    height: 100%;
+    font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+    background: #2a2a2a;
+    color: var(--text-dark);
+    overflow: hidden;
+  }
+
+  /* Phone frame */
+  .device-wrap {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .phone {
+    width: 390px;
+    height: 100%;
+    max-height: 844px;
+    background: white;
+    border-radius: 44px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.5), 0 0 0 10px #111, 0 0 0 11px #333;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Notch */
+  .notch {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 28px;
+    background: #111;
+    border-radius: 0 0 18px 18px;
+    z-index: 1000;
+  }
+
+  /* Status bar */
+  .status-bar {
+    height: 44px;
+    padding: 14px 28px 0 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 600;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+  }
+  .status-bar.dark { color: white; }
+  .status-bar.light { color: var(--text-dark); }
+  .status-icons { display: flex; gap: 5px; align-items: center; font-size: 12px; }
+
+  /* Screen container */
+  .screens {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .screen {
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: white;
+    display: none;
+    flex-direction: column;
+    -webkit-overflow-scrolling: touch;
+  }
+  .screen.active { display: flex; }
+  .screen::-webkit-scrollbar { display: none; }
+
+  /* ============ CAREEM HOME ============ */
+  .careem-header {
+    background: linear-gradient(180deg, #003D2E 0%, #00563F 100%);
+    padding: 8px 16px 70px 16px;
+    position: relative;
+  }
+  .search-bar {
+    background: rgba(255,255,255,0.95);
+    border-radius: 14px;
+    padding: 13px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    color: var(--text-mid);
+  }
+
+  .careem-body {
+    padding: 0 16px 90px 16px;
+    margin-top: -55px;
+    position: relative;
+  }
+
+  .service-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    background: white;
+    border-radius: 18px;
+    padding: 14px 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+
+  .service-tile {
+    background: #F7F7F7;
+    border-radius: 14px;
+    padding: 10px 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.15s;
+  }
+  .service-tile:active { transform: scale(0.95); }
+  .service-tile .icon {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+  }
+  .service-tile .label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-dark);
+  }
+  .badge {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    background: var(--careem-green);
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 5px;
+    border-radius: 5px;
+  }
+  .badge.pink {
+    background: var(--sherun-pink);
+  }
+
+  .quick-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .quick-card {
+    background: white;
+    border-radius: 14px;
+    padding: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .quick-card .small {
+    font-size: 11px;
+    color: var(--text-mid);
+  }
+  .quick-card .big {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-dark);
+  }
+
+  .section-title {
+    font-size: 20px;
+    font-weight: 800;
+    margin: 20px 0 12px 0;
+    color: var(--text-dark);
+  }
+
+  .shops-row {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .shops-row::-webkit-scrollbar { display: none; }
+  .shop-card {
+    flex-shrink: 0;
+    width: 75px;
+    height: 75px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 13px;
+    color: white;
+  }
+  .shop-1 { background: #0d5e3d; }
+  .shop-2 { background: #4a2c1f; font-family: 'Dancing Script'; font-size: 18px; }
+  .shop-3 { background: #B5E0E0; color: #1a4a4a; }
+  .shop-4 { background: #1a1a1a; }
+  .shop-5 { background: #002F6C; }
+  .shop-6 { background: #F5E6CA; color: #8B4513; }
+  .shop-7 { background: #7FB342; }
+
+  .reorder-card {
+    margin-top: 20px;
+    padding: 16px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .reorder-card .title {
+    font-size: 18px;
+    font-weight: 800;
+  }
+  .reorder-card .sub {
+    font-size: 13px;
+    color: var(--text-mid);
+    margin-top: 2px;
+  }
+
+  /* Bottom nav */
+  .bottom-nav {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--careem-green-dark);
+    padding: 12px 0 24px 0;
+    display: flex;
+    justify-content: space-around;
+    z-index: 100;
+  }
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    color: rgba(255,255,255,0.6);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .nav-item.active { color: white; }
+  .nav-item svg { width: 22px; height: 22px; }
+
+  /* ============ SHE RUNS LANDING ============ */
+  .sherun-hero {
+    background: linear-gradient(135deg, #E91E80 0%, #C2185B 60%, #880E4F 100%);
+    padding: 60px 24px 40px 24px;
+    position: relative;
+    overflow: hidden;
+    color: white;
+  }
+  .sherun-hero::before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(255,255,255,0.15), transparent 70%);
+    border-radius: 50%;
+  }
+  .sherun-hero::after {
+    content: '';
+    position: absolute;
+    bottom: -80px;
+    left: -40px;
+    width: 180px;
+    height: 180px;
+    background: radial-gradient(circle, rgba(255,255,255,0.1), transparent 70%);
+    border-radius: 50%;
+  }
+  .back-btn {
+    width: 38px;
+    height: 38px;
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(10px);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: none;
+    color: white;
+    font-size: 18px;
+    position: relative;
+    z-index: 2;
+  }
+  .sherun-logo {
+    font-family: 'Dancing Script', cursive;
+    font-size: 56px;
+    font-weight: 700;
+    margin-top: 20px;
+    text-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    position: relative;
+    z-index: 2;
+  }
+  .sherun-tagline {
+    font-size: 14px;
+    opacity: 0.95;
+    margin-top: 4px;
+    font-weight: 500;
+    position: relative;
+    z-index: 2;
+  }
+  .sherun-pill {
+    display: inline-block;
+    background: rgba(255,255,255,0.25);
+    backdrop-filter: blur(10px);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-top: 16px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .sherun-body {
+    padding: 24px 20px 100px 20px;
+    background: var(--sherun-pink-soft);
+    flex: 1;
+  }
+
+  .errand-types {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .errand-card {
+    background: white;
+    border-radius: 18px;
+    padding: 16px 14px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+    box-shadow: 0 2px 12px rgba(233, 30, 128, 0.06);
+  }
+  .errand-card:active { transform: scale(0.97); }
+  .errand-card.selected {
+    border-color: var(--sherun-pink);
+    background: var(--sherun-pink-soft);
+  }
+  .errand-card .emoji {
+    font-size: 32px;
+    margin-bottom: 8px;
+  }
+  .errand-card .title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-dark);
+  }
+  .errand-card .desc {
+    font-size: 11px;
+    color: var(--text-mid);
+    margin-top: 2px;
+  }
+
+  .section-label {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--text-dark);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .section-label .link {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--sherun-pink);
+  }
+
+  .assistants-row {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    margin: 0 -20px 24px -20px;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  .assistants-row::-webkit-scrollbar { display: none; }
+  
+  .assistant-card {
+    flex-shrink: 0;
+    width: 140px;
+    background: white;
+    border-radius: 16px;
+    padding: 14px;
+    cursor: pointer;
+    box-shadow: 0 2px 12px rgba(233, 30, 128, 0.06);
+    border: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .assistant-card.selected {
+    border-color: var(--sherun-pink);
+  }
+  .assistant-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FCE4F0, #E91E80);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 800;
+    font-size: 22px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+  .verified-dot {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 18px;
+    height: 18px;
+    background: #4CAF50;
+    border: 2px solid white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 10px;
+  }
+  .assistant-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-dark);
+  }
+  .assistant-rating {
+    font-size: 12px;
+    color: var(--text-mid);
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .assistant-runs {
+    font-size: 11px;
+    color: var(--text-light);
+    margin-top: 4px;
+  }
+
+  /* Request form */
+  .form-card {
+    background: white;
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow: 0 2px 12px rgba(233, 30, 128, 0.06);
+    margin-bottom: 16px;
+  }
+  .form-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-mid);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+  .form-textarea {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    font-family: inherit;
+    font-size: 14px;
+    resize: none;
+    min-height: 80px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-textarea:focus { border-color: var(--sherun-pink); }
+
+  .location-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+  }
+  .location-icon {
+    width: 34px;
+    height: 34px;
+    background: var(--sherun-pink-light);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+  .location-text { flex: 1; }
+  .location-label {
+    font-size: 11px;
+    color: var(--text-mid);
+  }
+  .location-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-dark);
+  }
+
+  .estimate-box {
+    background: linear-gradient(135deg, #FFF0F7, #FCE4F0);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .estimate-label {
+    font-size: 11px;
+    color: var(--text-mid);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .estimate-value {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--sherun-pink);
+    margin-top: 2px;
+  }
+  .estimate-time {
+    text-align: right;
+  }
+  .estimate-time .v { font-size: 16px; font-weight: 700; color: var(--text-dark); }
+
+  /* CTA Button */
+  .cta-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #E91E80, #C2185B);
+    color: white;
+    border: none;
+    padding: 16px;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(233, 30, 128, 0.35);
+    transition: transform 0.15s;
+  }
+  .cta-btn:active { transform: scale(0.98); }
+  .cta-btn.secondary {
+    background: white;
+    color: var(--sherun-pink);
+    border: 2px solid var(--sherun-pink);
+    box-shadow: none;
+  }
+
+  /* ============ TRACKING SCREEN ============ */
+  .tracking-header {
+    background: linear-gradient(135deg, #E91E80, #880E4F);
+    padding: 50px 20px 24px 20px;
+    color: white;
+    position: relative;
+  }
+  .tracking-status {
+    font-size: 13px;
+    opacity: 0.9;
+    font-weight: 600;
+    margin-top: 16px;
+  }
+  .tracking-title {
+    font-size: 22px;
+    font-weight: 800;
+    margin-top: 4px;
+  }
+
+  .progress-track {
+    background: white;
+    margin: -20px 16px 16px 16px;
+    border-radius: 18px;
+    padding: 20px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    position: relative;
+    z-index: 2;
+  }
+  .progress-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 8px 0;
+    position: relative;
+  }
+  .progress-step:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 13px;
+    top: 32px;
+    bottom: -8px;
+    width: 2px;
+    background: var(--border);
+  }
+  .progress-step.done:not(:last-child)::before {
+    background: var(--sherun-pink);
+  }
+  .step-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 14px;
+    flex-shrink: 0;
+    z-index: 1;
+  }
+  .step-dot.done { background: var(--sherun-pink); }
+  .step-dot.current { 
+    background: var(--sherun-pink);
+    box-shadow: 0 0 0 4px var(--sherun-pink-light);
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 4px var(--sherun-pink-light); }
+    50% { box-shadow: 0 0 0 8px var(--sherun-pink-light); }
+  }
+  .step-info { padding-top: 3px; }
+  .step-title { font-size: 14px; font-weight: 700; color: var(--text-dark); }
+  .step-time { font-size: 12px; color: var(--text-mid); margin-top: 2px; }
+
+  .tracking-body {
+    padding: 0 16px 120px 16px;
+    background: var(--sherun-pink-soft);
+    flex: 1;
+  }
+
+  .assistant-strip {
+    background: white;
+    border-radius: 18px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  }
+  .strip-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FCE4F0, #E91E80);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 800;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .strip-info { flex: 1; }
+  .strip-name { font-size: 16px; font-weight: 700; }
+  .strip-meta { font-size: 12px; color: var(--text-mid); margin-top: 2px; }
+  .strip-actions { display: flex; gap: 8px; }
+  .icon-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--sherun-pink);
+    color: white;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .icon-btn.outline {
+    background: white;
+    color: var(--sherun-pink);
+    border: 1.5px solid var(--sherun-pink);
+  }
+
+  .request-summary {
+    background: white;
+    border-radius: 18px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .summary-row:last-child { border-bottom: none; }
+  .summary-row .k { color: var(--text-mid); }
+  .summary-row .v { font-weight: 600; color: var(--text-dark); text-align: right; max-width: 60%; }
+
+  /* ============ CHAT SCREEN ============ */
+  .chat-header {
+    background: white;
+    padding: 50px 16px 14px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .chat-back {
+    background: none;
+    border: none;
+    font-size: 22px;
+    color: var(--text-dark);
+    cursor: pointer;
+  }
+  .chat-header-info { flex: 1; }
+  .chat-header .name { font-size: 16px; font-weight: 700; }
+  .chat-header .status { font-size: 12px; color: #4CAF50; margin-top: 2px; }
+
+  .chat-messages {
+    flex: 1;
+    padding: 16px;
+    background: var(--sherun-pink-soft);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .msg {
+    max-width: 75%;
+    padding: 10px 14px;
+    border-radius: 18px;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  .msg.them {
+    background: white;
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .msg.me {
+    background: var(--sherun-pink);
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+  }
+  .msg-time {
+    font-size: 10px;
+    opacity: 0.7;
+    margin-top: 3px;
+  }
+
+  .chat-input-row {
+    background: white;
+    padding: 12px 16px 28px 16px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .chat-input {
+    flex: 1;
+    border: 1.5px solid var(--border);
+    border-radius: 24px;
+    padding: 10px 16px;
+    font-family: inherit;
+    font-size: 14px;
+    outline: none;
+  }
+  .chat-send {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--sherun-pink);
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Success screen */
+  .success-screen {
+    background: linear-gradient(135deg, #E91E80, #880E4F);
+    color: white;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    text-align: center;
+  }
+  .success-icon {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 50px;
+    margin-bottom: 24px;
+    animation: pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes pop {
+    0% { transform: scale(0); }
+    100% { transform: scale(1); }
+  }
+  .success-title {
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+  .success-sub {
+    font-size: 15px;
+    opacity: 0.9;
+    margin-bottom: 32px;
+    max-width: 280px;
+    line-height: 1.5;
+  }
+
+  /* Floating CTA for forms */
+  .floating-cta {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 16px 20px 24px 20px;
+    background: linear-gradient(180deg, transparent, white 30%);
+    z-index: 50;
+  }
+
+  /* Promo banner on Careem home */
+  .sherun-promo {
+    margin: 16px 0 0 0;
+    background: linear-gradient(135deg, #E91E80, #880E4F);
+    border-radius: 18px;
+    padding: 16px;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(233, 30, 128, 0.25);
+  }
+  .sherun-promo::before {
+    content: '';
+    position: absolute;
+    top: -30px;
+    right: -30px;
+    width: 120px;
+    height: 120px;
+    background: radial-gradient(circle, rgba(255,255,255,0.15), transparent 70%);
+    border-radius: 50%;
+  }
+  .promo-content { flex: 1; position: relative; z-index: 2; }
+  .promo-title {
+    font-family: 'Dancing Script', cursive;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .promo-sub {
+    font-size: 12px;
+    opacity: 0.95;
+    margin-top: 6px;
+    font-weight: 500;
+  }
+  .promo-arrow {
+    font-size: 24px;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Confirm modal */
+  .modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    align-items: flex-end;
+    z-index: 200;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: white;
+    border-radius: 24px 24px 0 0;
+    padding: 24px 20px 30px 20px;
+    width: 100%;
+    animation: slideUp 0.3s ease-out;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  .modal-handle {
+    width: 40px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 0 auto 16px auto;
+  }
+  .modal h3 {
+    font-size: 20px;
+    font-weight: 800;
+    margin-bottom: 16px;
+  }
+
+</style>
+</head>
+<body>
+<div class="device-wrap">
+  <div class="phone">
+    <div class="notch"></div>
+    
+    <!-- ============ SCREEN 1: CAREEM HOME ============ -->
+    <div class="screen active" id="screen-home">
+      <div class="status-bar dark">
+        <span>9:41</span>
+        <div class="status-icons">
+          <span>●●●●</span>
+          <span>📶</span>
+          <span>🔋</span>
+        </div>
+      </div>
+      <div class="careem-header">
+        <div class="search-bar">
+          <span>🔍</span>
+          <span>Discover anything</span>
+        </div>
+      </div>
+      <div class="careem-body">
+        <div class="service-grid">
+          <div class="service-tile">
+            <span class="badge">30% Off</span>
+            <div class="icon">🍔</div>
+            <div class="label">Food</div>
+          </div>
+          <div class="service-tile">
+            <div class="icon">🧺</div>
+            <div class="label">Groceries</div>
+          </div>
+          <div class="service-tile">
+            <div class="icon">🛍️</div>
+            <div class="label">Shops</div>
+          </div>
+          <div class="service-tile">
+            <div class="icon">🪙</div>
+            <div class="label">Pay</div>
+          </div>
+          <div class="service-tile">
+            <span class="badge">Send</span>
+            <div class="icon">🛵</div>
+            <div class="label">Box</div>
+          </div>
+          <div class="service-tile">
+            <div class="icon">🍽️</div>
+            <div class="label">DineOut</div>
+          </div>
+          <div class="service-tile">
+            <div class="icon">💚</div>
+            <div class="label">Right Click</div>
+          </div>
+          <div class="service-tile" onclick="go('sherun-home')">
+            <span class="badge pink">NEW</span>
+            <div class="icon">💕</div>
+            <div class="label" style="color:#E91E80">She Runs</div>
+          </div>
+        </div>
+
+        <!-- She Runs promo banner -->
+        <div class="sherun-promo" onclick="go('sherun-home')">
+          <div class="promo-content">
+            <div class="promo-title">She Runs</div>
+            <div class="promo-sub">Your trusted female assistant — shop & errands, done for you</div>
+          </div>
+          <div class="promo-arrow">›</div>
+        </div>
+
+        <div class="quick-row">
+          <div class="quick-card">
+            <span class="small">Balance</span>
+            <span class="big">JOD 0.000</span>
+          </div>
+          <div class="quick-card">
+            <span class="small">Ride to</span>
+            <span class="big">.</span>
+          </div>
+          <div class="quick-card">
+            <span class="small">Reorder</span>
+            <span class="big">Your top picks</span>
+          </div>
+        </div>
+
+        <div class="section-title">Popular Shops</div>
+        <div class="shops-row">
+          <div class="shop-card shop-1">centro<br>سنترو</div>
+          <div class="shop-card shop-2">T-Bone</div>
+          <div class="shop-card shop-3">H</div>
+          <div class="shop-card shop-4">N</div>
+          <div class="shop-card shop-5">H</div>
+          <div class="shop-card shop-6">AL-M</div>
+          <div class="shop-card shop-7">Bustan</div>
+        </div>
+
+        <div class="reorder-card">
+          <div>
+            <div class="title">Reorder in a Snap! 🔥</div>
+            <div class="sub">Repeat past purchases with a single click</div>
+          </div>
+          <div style="font-size: 24px; color: var(--text-mid);">→</div>
+        </div>
+      </div>
+
+      <div class="bottom-nav">
+        <div class="nav-item active">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 7v11h-6v-7H9v7H3V10z"/></svg>
+          <span>Home</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="3" width="14" height="18" rx="2"/></svg>
+          <span>Activities</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18l-2 12H5z"/><circle cx="9" cy="21" r="1"/><circle cx="17" cy="21" r="1"/></svg>
+          <span>Carts</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg>
+          <span>Profile</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ SCREEN 2: SHE RUNS HOME ============ -->
+    <div class="screen" id="screen-sherun-home">
+      <div class="status-bar dark">
+        <span>9:41</span>
+        <div class="status-icons">
+          <span>●●●●</span>
+          <span>📶</span>
+          <span>🔋</span>
+        </div>
+      </div>
+      <div class="sherun-hero">
+        <button class="back-btn" onclick="go('home')">‹</button>
+        <div class="sherun-logo">She Runs</div>
+        <div class="sherun-tagline">Errands & shopping by trusted women, for women</div>
+        <div class="sherun-pill">✨ Verified · Female-only · 24/7</div>
+      </div>
+
+      <div class="sherun-body">
+        <div class="section-label">What do you need today?</div>
+        <div class="errand-types">
+          <div class="errand-card" onclick="selectErrand(this, 'Grocery shopping')">
+            <div class="emoji">🛒</div>
+            <div class="title">Groceries</div>
+            <div class="desc">Pick-up from stores</div>
+          </div>
+          <div class="errand-card" onclick="selectErrand(this, 'Pharmacy pickup')">
+            <div class="emoji">💊</div>
+            <div class="title">Pharmacy</div>
+            <div class="desc">Medicine & care items</div>
+          </div>
+          <div class="errand-card" onclick="selectErrand(this, 'Personal shopping')">
+            <div class="emoji">👗</div>
+            <div class="title">Personal Shopping</div>
+            <div class="desc">Clothes, gifts & more</div>
+          </div>
+          <div class="errand-card" onclick="selectErrand(this, 'Custom errand')">
+            <div class="emoji">✨</div>
+            <div class="title">Custom Errand</div>
+            <div class="desc">Anything you need</div>
+          </div>
+        </div>
+
+        <div class="section-label">
+          Your trusted assistants
+          <span class="link">See all ›</span>
+        </div>
+        <div class="assistants-row">
+          <div class="assistant-card" onclick="selectAssistant(this, 'Layla')">
+            <div class="assistant-avatar">L<div class="verified-dot">✓</div></div>
+            <div class="assistant-name">Layla</div>
+            <div class="assistant-rating">⭐ 4.9 · (210)</div>
+            <div class="assistant-runs">340 errands</div>
+          </div>
+          <div class="assistant-card" onclick="selectAssistant(this, 'Noor')">
+            <div class="assistant-avatar" style="background: linear-gradient(135deg, #FFD1E1, #C2185B);">N<div class="verified-dot">✓</div></div>
+            <div class="assistant-name">Noor</div>
+            <div class="assistant-rating">⭐ 4.8 · (156)</div>
+            <div class="assistant-runs">220 errands</div>
+          </div>
+          <div class="assistant-card" onclick="selectAssistant(this, 'Maya')">
+            <div class="assistant-avatar" style="background: linear-gradient(135deg, #F8BBD0, #AD1457);">M<div class="verified-dot">✓</div></div>
+            <div class="assistant-name">Maya</div>
+            <div class="assistant-rating">⭐ 5.0 · (98)</div>
+            <div class="assistant-runs">145 errands</div>
+          </div>
+          <div class="assistant-card" onclick="selectAssistant(this, 'Sara')">
+            <div class="assistant-avatar" style="background: linear-gradient(135deg, #FCE4EC, #880E4F);">S<div class="verified-dot">✓</div></div>
+            <div class="assistant-name">Sara</div>
+            <div class="assistant-rating">⭐ 4.9 · (180)</div>
+            <div class="assistant-runs">275 errands</div>
+          </div>
+        </div>
+
+        <div class="form-card">
+          <div class="form-label">Tell us what you need</div>
+          <textarea class="form-textarea" id="errand-details" placeholder="e.g. Pick up Panadol Extra and a box of tissues from Boots pharmacy in Abdoun..."></textarea>
+        </div>
+
+        <div class="form-card">
+          <div class="form-label">Deliver to</div>
+          <div class="location-row">
+            <div class="location-icon">📍</div>
+            <div class="location-text">
+              <div class="location-label">Home</div>
+              <div class="location-value">Abdoun, Amman</div>
+            </div>
+            <span style="color: var(--text-light)">›</span>
+          </div>
+        </div>
+
+        <div class="estimate-box">
+          <div>
+            <div class="estimate-label">Estimated cost</div>
+            <div class="estimate-value">JOD 4.50</div>
+          </div>
+          <div class="estimate-time">
+            <div class="estimate-label">Est. time</div>
+            <div class="v">35–50 min</div>
+          </div>
+        </div>
+
+        <button class="cta-btn" onclick="showConfirm()">Request Errand 💕</button>
+      </div>
+
+      <!-- Confirm Modal -->
+      <div class="modal-overlay" id="confirm-modal">
+        <div class="modal">
+          <div class="modal-handle"></div>
+          <h3>Confirm your request</h3>
+          <div class="summary-row">
+            <span class="k">Service</span>
+            <span class="v" id="conf-service">Grocery shopping</span>
+          </div>
+          <div class="summary-row">
+            <span class="k">Assistant</span>
+            <span class="v" id="conf-assistant">Layla</span>
+          </div>
+          <div class="summary-row">
+            <span class="k">Deliver to</span>
+            <span class="v">Abdoun, Amman</span>
+          </div>
+          <div class="summary-row">
+            <span class="k">Estimated cost</span>
+            <span class="v" style="color: var(--sherun-pink); font-weight: 700">JOD 4.50</span>
+          </div>
+          <div style="height: 16px"></div>
+          <button class="cta-btn" onclick="confirmRequest()">Confirm & Pay</button>
+          <div style="height: 8px"></div>
+          <button class="cta-btn secondary" onclick="hideConfirm()">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ SCREEN 3: SUCCESS ============ -->
+    <div class="screen success-screen" id="screen-success">
+      <div class="success-icon">✓</div>
+      <div class="success-title">Request sent!</div>
+      <div class="success-sub">Layla has been notified and will start your errand shortly. We'll keep you updated every step of the way.</div>
+      <button class="cta-btn" style="background: white; color: var(--sherun-pink); box-shadow: none; width: 100%; max-width: 280px;" onclick="go('tracking')">Track my errand →</button>
+    </div>
+
+    <!-- ============ SCREEN 4: TRACKING ============ -->
+    <div class="screen" id="screen-tracking">
+      <div class="status-bar dark">
+        <span>9:41</span>
+        <div class="status-icons">
+          <span>●●●●</span>
+          <span>📶</span>
+          <span>🔋</span>
+        </div>
+      </div>
+      <div class="tracking-header">
+        <button class="back-btn" onclick="go('home')">‹</button>
+        <div class="tracking-status">YOUR ERRAND</div>
+        <div class="tracking-title">Layla is on her way 🛵</div>
+      </div>
+
+      <div class="progress-track">
+        <div class="progress-step done">
+          <div class="step-dot done">✓</div>
+          <div class="step-info">
+            <div class="step-title">Request confirmed</div>
+            <div class="step-time">9:41 AM</div>
+          </div>
+        </div>
+        <div class="progress-step done">
+          <div class="step-dot done">✓</div>
+          <div class="step-info">
+            <div class="step-title">Layla accepted</div>
+            <div class="step-time">9:43 AM</div>
+          </div>
+        </div>
+        <div class="progress-step done">
+          <div class="step-dot current">🛍️</div>
+          <div class="step-info">
+            <div class="step-title">Shopping in progress</div>
+            <div class="step-time">at Boots, Abdoun</div>
+          </div>
+        </div>
+        <div class="progress-step">
+          <div class="step-dot">🛵</div>
+          <div class="step-info">
+            <div class="step-title">On the way to you</div>
+            <div class="step-time" style="color: var(--text-light)">Estimated 10:25 AM</div>
+          </div>
+        </div>
+        <div class="progress-step">
+          <div class="step-dot">🏠</div>
+          <div class="step-info">
+            <div class="step-title">Delivered</div>
+            <div class="step-time" style="color: var(--text-light)">Pending</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tracking-body">
+        <div class="assistant-strip">
+          <div class="strip-avatar">L</div>
+          <div class="strip-info">
+            <div class="strip-name">Layla · ⭐ 4.9</div>
+            <div class="strip-meta">Verified assistant · 340 errands</div>
+          </div>
+          <div class="strip-actions">
+            <button class="icon-btn outline" onclick="go('chat')">💬</button>
+            <button class="icon-btn">📞</button>
+          </div>
+        </div>
+
+        <div class="request-summary">
+          <div class="summary-row">
+            <span class="k">Service</span>
+            <span class="v">Pharmacy pickup</span>
+          </div>
+          <div class="summary-row">
+            <span class="k">Items</span>
+            <span class="v">Panadol Extra, tissues</span>
+          </div>
+          <div class="summary-row">
+            <span class="k">Pickup from</span>
+            <span class="v">Boots Pharmacy, Abdoun</span>
+          </div>
+          <div class="summary-row">
+            <span class="k">Deliver to</span>
+            <span class="v">Home · Abdoun, Amman</span>
+          </div>
+          <div class="summary-row">
+            <span class="k">Estimated total</span>
+            <span class="v" style="color: var(--sherun-pink)">JOD 4.50</span>
+          </div>
+        </div>
+
+        <button class="cta-btn secondary" onclick="go('chat')">💬 Message Layla</button>
+      </div>
+    </div>
+
+    <!-- ============ SCREEN 5: CHAT ============ -->
+    <div class="screen" id="screen-chat">
+      <div class="chat-header">
+        <button class="chat-back" onclick="go('tracking')">‹</button>
+        <div class="strip-avatar" style="width: 40px; height: 40px; font-size: 16px;">L</div>
+        <div class="chat-header-info">
+          <div class="name">Layla</div>
+          <div class="status">● Online now</div>
+        </div>
+      </div>
+      <div class="chat-messages" id="chat-messages">
+        <div class="msg them">
+          Hi! 👋 I just got your request. I'm heading to Boots in Abdoun now.
+          <div class="msg-time">9:43 AM</div>
+        </div>
+        <div class="msg me">
+          Perfect, thank you! Can you also check if they have hand sanitizer?
+          <div class="msg-time">9:44 AM</div>
+        </div>
+        <div class="msg them">
+          Of course 💕 I'll check and send you photos before I buy
+          <div class="msg-time">9:44 AM</div>
+        </div>
+        <div class="msg them">
+          I'm at the pharmacy now. They have Dettol and Lifebuoy hand sanitizers. Which one would you prefer?
+          <div class="msg-time">9:58 AM</div>
+        </div>
+      </div>
+      <div class="chat-input-row">
+        <input type="text" class="chat-input" id="chat-input" placeholder="Type a message...">
+        <button class="chat-send" onclick="sendMsg()">➤</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  let selectedErrand = 'Grocery shopping';
+  let selectedAssistant = 'Layla';
+
+  function go(name) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const map = {
+      'home': 'screen-home',
+      'sherun-home': 'screen-sherun-home',
+      'success': 'screen-success',
+      'tracking': 'screen-tracking',
+      'chat': 'screen-chat'
+    };
+    document.getElementById(map[name]).classList.add('active');
+    document.getElementById(map[name]).scrollTop = 0;
+  }
+
+  function selectErrand(el, name) {
+    document.querySelectorAll('.errand-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedErrand = name;
+    document.getElementById('conf-service').textContent = name;
+  }
+
+  function selectAssistant(el, name) {
+    document.querySelectorAll('.assistant-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedAssistant = name;
+    document.getElementById('conf-assistant').textContent = name;
+  }
+
+  function showConfirm() {
+    document.getElementById('confirm-modal').classList.add('show');
+  }
+  function hideConfirm() {
+    document.getElementById('confirm-modal').classList.remove('show');
+  }
+  function confirmRequest() {
+    hideConfirm();
+    go('success');
+  }
+
+  function sendMsg() {
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim();
+    if (!text) return;
+    const msgs = document.getElementById('chat-messages');
+    const time = new Date().toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'});
+    msgs.insertAdjacentHTML('beforeend', `
+      <div class="msg me">${text}<div class="msg-time">${time}</div></div>
+    `);
+    input.value = '';
+    msgs.scrollTop = msgs.scrollHeight;
+    // Simulated reply
+    setTimeout(() => {
+      msgs.insertAdjacentHTML('beforeend', `
+        <div class="msg them">Got it! 💕 I'll take care of it.<div class="msg-time">${time}</div></div>
+      `);
+      msgs.scrollTop = msgs.scrollHeight;
+    }, 1200);
+  }
+
+  // Initial selections
+  document.querySelector('.errand-card').classList.add('selected');
+  document.querySelector('.assistant-card').classList.add('selected');
+
+  // Enter to send in chat
+  document.getElementById('chat-input').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendMsg();
+  });
+</script>
+</body>
+</html>
